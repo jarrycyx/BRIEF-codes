@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "./nvidia_condensa"))
 sys.path.append(os.path.dirname(__file__))
 
-from main_cyx import NFGR, RandomCubeSampler, RandompointSampler
+from main import NFGR, RandomCubeSampler, RandompointSampler
 from condensa.schemes import Compose, Prune, Quantize, NeuronPrune, StructurePrune
 import condensa
 # from utils.nvidia_condensa import condensa

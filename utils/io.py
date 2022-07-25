@@ -5,16 +5,12 @@ from os.path import join as opj
 from os.path import dirname as opd
 from os.path import basename as opb
 from os.path import splitext as ops
-import time
 from typing import Callable, List, Tuple,Dict
 import torch
 import torch.optim
 import numpy as np
-import tifffile
 import zipfile
 import yaml
-import shutil
-import mrcfile
 import py7zr
 from py7zr import FILTER_BZIP2,FILTER_LZMA,FILTER_ZSTD
 from utils.tool import read_img, save_img
@@ -298,36 +294,6 @@ def get_folder_size(folder_path:str):
     else:
         total_size = os.path.getsize(folder_path)
     return total_size
-# def write_binary_yaml_zip(binary_list_dict:Dict[str,list],sideinfos_dict:dict,save_path):
-#     timestamp = time.strftime("_%Y%m%d%H%M%S")
-#     temp_dir = 'temp'+timestamp
-#     temp_path_list = []
-#     os.makedirs(temp_dir,exist_ok=False)
-#     for key in binary_list_dict.keys():
-#         for batch_idx,binary in enumerate(binary_list_dict[key]):
-#             temp_binary_path = os.path.join(temp_dir,key+'_{}'.format(batch_idx))
-#             temp_path_list.append(temp_binary_path)
-#             write_binary(binary_list_dict[key][batch_idx],temp_binary_path)
-#     temp_yaml_path = os.path.join(temp_dir,'sideinfos.yaml')
-#     temp_path_list.append(temp_yaml_path)
-#     write_yaml(sideinfos_dict,temp_yaml_path)
-#     write_zip(temp_path_list,save_path)
-#     shutil.rmtree(temp_dir)
-# def read_binary_yaml_zip(binary_name_list:List[str],file_path):
-#     zip_data = read_zip(file_path)
-#     sideinfos_dict_file = zip_data['sideinfos.yaml']
-#     sideinfos_dict = read_yaml(file=sideinfos_dict_file)
-#     binary_list_dict = {}
-#     for binary_name in binary_name_list:
-#         binary_list = []
-#         for batch_idx in range(int(1e8)):
-#             binary_path_basename = binary_name+'_{}'.format(batch_idx)
-#             if binary_path_basename in zip_data.keys():
-#                 binary_list.append(zip_data[binary_path_basename])
-#             else:
-#                 break
-#         binary_list_dict[binary_name] = binary_list
-#     return binary_list_dict,sideinfos_dict
 
 
 if __name__=="__main__":

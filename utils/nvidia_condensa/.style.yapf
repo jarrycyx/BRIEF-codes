@@ -1,5 +1,0 @@
-[style]
-based_on_style = pep8
-blank_lines_around_top_level_definition = 1
-column_limit = 79
-indent_width = 4

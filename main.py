@@ -37,14 +37,17 @@ import tifffile
 from utils.ModelSave import save_model, load_model, CopyDir
 import logging
 import csv
+
+
 class RandomCubeSampler:
-    def __init__(self, data: torch.Tensor ,weight: np.ndarray, coords_mode: str, cube_count: int, cube_len: List[int], sample_count: int, device: str = 'cpu', gpu_force: bool = False) -> None:
+    def __init__(self, data: torch.Tensor, weight: np.ndarray, coords_mode: str, cube_count: int, cube_len: List[int], sample_count: int, device: str = 'cpu', gpu_force: bool = False) -> None:
         self.sample_count = sample_count
         self.device = device
         # 3d-> dhwc or thwc
         if len(data.shape) == 4:
             self.d, self.h, self.w, self.c = data.shape
-            self.coords = create_coords((self.d, self.h, self.w), mode=coords_mode)
+            self.coords = create_coords(
+                (self.d, self.h, self.w), mode=coords_mode)
             self.data = data
             weight = torch.from_numpy(weight)
             self.weight = weight
@@ -73,34 +76,34 @@ class RandomCubeSampler:
             self.pop_size = self.data_cubes.shape[0]
         # 2d-> hwc
         elif len(data.shape) == 3:
-                self.h, self.w, self.c = data.shape
-                self.coords = create_coords((self.h, self.w), mode=coords_mode)
-                self.data = data
-                weight = torch.from_numpy(weight)
-                self.weight = weight
-                for i in range(2):
-                    cube_len[i] = min(cube_len[i], data.shape[i])
-                self.cube_len_h, self.cube_len_w = cube_len[:2]
-                self.cube_count = cube_count
-                self.gpu_force = gpu_force
-                if gpu_force:
-                    self.coords = self.coords.to(device)
-                    self.weight = self.weight.to(device)
-                else:
-                    self.data = self.data.cpu()
-                self.data_cubes = self.data.unfold(0, cube_len[0], 1).unfold(
-                    1, cube_len[1], 1)
-                self.coords_cubes = self.coords.unfold(0, cube_len[0], 1).unfold(
-                    1, cube_len[1], 1)
-                self.weight_cubes = self.weight.unfold(0, cube_len[0], 1).unfold(
-                    1, cube_len[1], 1)
-                self.data_cubes = rearrange(
-                    self.data_cubes, 'hc wc c hs ws-> (hc wc) hs ws c')
-                self.coords_cubes = rearrange(
-                    self.coords_cubes, 'hc wc c hs ws-> (hc wc) hs ws c')
-                self.weight_cubes = rearrange(
-                    self.weight_cubes, 'hc wc c hs ws-> (hc wc) hs ws c')
-                self.pop_size = self.data_cubes.shape[0]
+            self.h, self.w, self.c = data.shape
+            self.coords = create_coords((self.h, self.w), mode=coords_mode)
+            self.data = data
+            weight = torch.from_numpy(weight)
+            self.weight = weight
+            for i in range(2):
+                cube_len[i] = min(cube_len[i], data.shape[i])
+            self.cube_len_h, self.cube_len_w = cube_len[:2]
+            self.cube_count = cube_count
+            self.gpu_force = gpu_force
+            if gpu_force:
+                self.coords = self.coords.to(device)
+                self.weight = self.weight.to(device)
+            else:
+                self.data = self.data.cpu()
+            self.data_cubes = self.data.unfold(0, cube_len[0], 1).unfold(
+                1, cube_len[1], 1)
+            self.coords_cubes = self.coords.unfold(0, cube_len[0], 1).unfold(
+                1, cube_len[1], 1)
+            self.weight_cubes = self.weight.unfold(0, cube_len[0], 1).unfold(
+                1, cube_len[1], 1)
+            self.data_cubes = rearrange(
+                self.data_cubes, 'hc wc c hs ws-> (hc wc) hs ws c')
+            self.coords_cubes = rearrange(
+                self.coords_cubes, 'hc wc c hs ws-> (hc wc) hs ws c')
+            self.weight_cubes = rearrange(
+                self.weight_cubes, 'hc wc c hs ws-> (hc wc) hs ws c')
+            self.pop_size = self.data_cubes.shape[0]
         else:
             raise NotImplementedError
 
@@ -133,14 +136,16 @@ class RandompointSampler:
         self.sample_count = sample_count
         if len(data.shape) == 4:
             d, h, w, c = data.shape
-            self.coords = create_flattened_coords((d, h, w), mode=coords_mode).to(device)
+            self.coords = create_flattened_coords(
+                (d, h, w), mode=coords_mode).to(device)
             self.data = rearrange(data, 'd h w c-> (d h w) c')
             weight = torch.from_numpy(weight).to(device)
             self.weight = rearrange(weight, 'd h w c-> (d h w) c')
             self.pop_size = d*h*w
         elif len(data.shape) == 3:
             h, w, c = data.shape
-            self.coords = create_flattened_coords((h, w), mode=coords_mode).to(device)
+            self.coords = create_flattened_coords(
+                (h, w), mode=coords_mode).to(device)
             self.data = rearrange(data, 'h w c-> (h w) c')
             weight = torch.from_numpy(weight).to(device)
             self.weight = rearrange(weight, 'h w c-> (h w) c')
@@ -224,7 +229,6 @@ class NFGR(_BaseCompressFramerwork):
             ideal_phi_param_count = ideal_module_size / 2.
         else:
             ideal_phi_param_count = ideal_module_size / 4.
-        # xtx: check whether the ideal_phi_param_count satisfy the model
         if opt.Module.phi.name == 'SIREN_Pyramid':
             check_param_count = ALL_CHECK_PARAM_COUNT['SIREN_Pyramid']
             if not check_param_count(param_count=ideal_phi_param_count, **opt.Module.phi):
@@ -282,11 +286,10 @@ class NFGR(_BaseCompressFramerwork):
         sideinfos = OmegaConf.load(sideinfos_path)
         data_shape = sideinfos['data_shape']
         phi_features = sideinfos['phi_features']
-        phi_name = sideinfos['phi_name']                # xtx
+        phi_name = sideinfos['phi_name']
         DeCF.opt.Module.phi.features = phi_features
-        DeCF.opt.Module.phi.name = phi_name             # xtx
+        DeCF.opt.Module.phi.name = phi_name
         DeCF.init_module()
-        # DeCF.load_module(module_path,DeCF.opt.Compress.module_serializing_method)
         load_model(DeCF.module['phi'], module_path, DeCF.device)
         # device
         decompress_device = 'cuda' if DeCF.opt.Decompress.gpu else 'cpu'
@@ -318,13 +321,17 @@ class NFGR(_BaseCompressFramerwork):
                 h = [int(i) for i in chunk_name.split('-')[0].split('_')[1:]]
                 w = [int(i) for i in chunk_name.split('-')[1].split('_')[1:]]
             module_path = opj(module_save_dir, chunk_name, 'module')
-            sideinfos_path = opj(sideinfos_save_dir, chunk_name, 'sideinfos.yaml')
-            decompressed_data = NFGR.decompress(original_opt, module_path, sideinfos_path)
-            chunk_dict = {'data': decompressed_data, 'name': chunk_name, 'h': h, 'w': w}
+            sideinfos_path = opj(sideinfos_save_dir,
+                                 chunk_name, 'sideinfos.yaml')
+            decompressed_data = NFGR.decompress(
+                original_opt, module_path, sideinfos_path)
+            chunk_dict = {'data': decompressed_data,
+                          'name': chunk_name, 'h': h, 'w': w}
             if len(data_shape) == 4:
                 chunk_dict['d'] = d
             decompressed_data_chunk_list.append(chunk_dict)
-        decompressed_data = merge_divided_data(decompressed_data_chunk_list, data_shape)
+        decompressed_data = merge_divided_data(
+            decompressed_data_chunk_list, data_shape)
         return decompressed_data
 
     def compress(self, data_path: str):
@@ -335,16 +342,18 @@ class NFGR(_BaseCompressFramerwork):
             cube_len = cube_len[0]*cube_len[1]*cube_len[2]
         elif len(data.shape) == 3:
             cube_len = cube_len[1]*cube_len[2]
-        if self.opt.Compress.sampler.name == 'randomcube' and min(data.size,cube_len) > 80*80*80*1 :
+        if self.opt.Compress.sampler.name == 'randomcube' and min(data.size, cube_len) > 80*80*80*1:
             logging.warning('Chunk size should not be larger than 80*80*80*1!')
             self.opt.Compress.sampler.name = 'randompoint'
         data_preprocessed = preprocess(data, self.opt.Compress.preprocess.denoise.level,
                                        self.opt.Compress.preprocess.denoise.close, self.opt.Compress.preprocess.clip)
-        data_preprocessed_save_path = opj(Log.logdir, opb(ops(data_path)[0])+'_preprocessed'+ops(data_path)[-1])
+        data_preprocessed_save_path = opj(Log.logdir, opb(
+            ops(data_path)[0])+'_preprocessed'+ops(data_path)[-1])
         save_img(data_preprocessed_save_path, data_preprocessed)
         weight = parse_weight(data_preprocessed, self.opt.Compress.loss.weight)
         # normalize
-        data, sideinfos = normalize_data(data_preprocessed, **self.opt.Normalize)
+        data, sideinfos = normalize_data(
+            data_preprocessed, **self.opt.Normalize)
         data = data.to(self.device)
         # module
         if self.opt.Compress.param.init_net_path == 'none':
@@ -352,13 +361,11 @@ class NFGR(_BaseCompressFramerwork):
             phi_features, theory_module_size = self.prepare_module(
                 ideal_param_size)
         else:
-            # xtx:提取模型文件
             ideal_param_size = self.parse_param_size(data_path)
             phi_features, theory_module_size = self.prepare_module(
                 ideal_param_size)
 
             module_path = self.opt.Compress.param.init_net_path
-            # self.load_module(module_path,self.opt.Compress.module_serializing_method)
             load_model(self.module['phi'], module_path, self.device)
         # sideinfos
         try:
@@ -382,10 +389,12 @@ class NFGR(_BaseCompressFramerwork):
             self.opt.Compress.checkpoints, max_steps)
         optimizer_phi = configure_optimizer(
             self.module['phi'].parameters(), self.opt.Compress.optimizer_name_phi, self.opt.Compress.lr_phi)
-        lr_scheduler_phi = configure_lr_scheduler(optimizer_phi, self.opt.Compress.lr_scheduler_phi)
+        lr_scheduler_phi = configure_lr_scheduler(
+            optimizer_phi, self.opt.Compress.lr_scheduler_phi)
         pbar = tqdm(sampler, desc='Compressing', leave=True, file=sys.stdout)
         loss_log_freq = self.opt.Compress.loss_log_freq
-        assert self.opt.Compress.loss.weight_thres <= get_type_max(data_preprocessed), 'The weight threshold should be less than the data maximum!'
+        assert self.opt.Compress.loss.weight_thres <= get_type_max(
+            data_preprocessed), 'The weight threshold should be less than the data maximum!'
         weight_thres_normalized, _ = normalize_data(np.array(
             self.opt.Compress.loss.weight_thres), **self.opt.Normalize, max=sideinfos['max'], min=sideinfos['min'])
         weight_thres_normalized = float(weight_thres_normalized)
@@ -409,11 +418,13 @@ class NFGR(_BaseCompressFramerwork):
             if steps % loss_log_freq == 0:
                 Log.log_metrics({'loss': loss.item()}, steps)
             if steps in checkpoints:
-                save_dir_current_steps = opj(Log.logdir, 'steps{}'.format(steps))
+                save_dir_current_steps = opj(
+                    Log.logdir, 'steps{}'.format(steps))
                 os.makedirs(save_dir_current_steps, exist_ok=True)
                 # dynamic allo param save
                 if self.opt.Compress.param.save_net_path == 'none':
-                    compressed_save_dir = opj(save_dir_current_steps, 'compressed')
+                    compressed_save_dir = opj(
+                        save_dir_current_steps, 'compressed')
                     os.makedirs(compressed_save_dir, exist_ok=True)
                     module_path = opj(compressed_save_dir, 'module')
                     sideinfos_path = opj(compressed_save_dir, 'sideinfos.yaml')
@@ -423,39 +434,45 @@ class NFGR(_BaseCompressFramerwork):
                 OmegaConf.save(sideinfos, sideinfos_path)
                 save_model(self.module['phi'], module_path, self.device)
                 actual_module_size = get_folder_size(module_path)
-                theory_compressed_data_bytes = os.path.getsize(sideinfos_path) + theory_module_size
-                actual_compressed_data_bytes = os.path.getsize(sideinfos_path) + actual_module_size
+                theory_compressed_data_bytes = os.path.getsize(
+                    sideinfos_path) + theory_module_size
+                actual_compressed_data_bytes = os.path.getsize(
+                    sideinfos_path) + actual_module_size
                 orig_data_bytes = os.path.getsize(data_path)
                 Log.log_metrics({'data_bytes/orig': orig_data_bytes, 'data_bytes/theory_compressed': theory_compressed_data_bytes, 'data_bytes/actual_compressed': actual_compressed_data_bytes,
                                  'compress_ratio/theory': orig_data_bytes/theory_compressed_data_bytes, 'compress_ratio/actual': orig_data_bytes/actual_compressed_data_bytes}, steps)
                 # decompress
                 if self.opt.Compress.decompress:
-                    decompressed_data = self.decompress(args.p, module_path, sideinfos_path)
+                    decompressed_data = self.decompress(
+                        args.p, module_path, sideinfos_path)
                     # save data
                     if self.opt.Decompress.keep_decompressed:
-                        decompressed_save_dir = opj(save_dir_current_steps, 'decompressed')
+                        decompressed_save_dir = opj(
+                            save_dir_current_steps, 'decompressed')
                         os.makedirs(decompressed_save_dir, exist_ok=True)
-                        decompressed_data_save_path = opj(decompressed_save_dir, opb(ops(data_path)[0])+'_decompressed'+ops(data_path)[-1])
-                        save_img(decompressed_data_save_path, decompressed_data)
+                        decompressed_data_save_path = opj(decompressed_save_dir, opb(
+                            ops(data_path)[0])+'_decompressed'+ops(data_path)[-1])
+                        save_img(decompressed_data_save_path,
+                                 decompressed_data)
                     # mip
                     if self.opt.Decompress.mip:
                         mip_save_dir = opj(save_dir_current_steps, 'mip')
                         os.makedirs(mip_save_dir, exist_ok=True)
                         orig_data = read_img(data_path)
                         if len(orig_data.shape) == 4:
-                            mip_ops(orig_data, mip_save_dir, opb(ops(data_path)[0]), ops(data_path)[-1])
-                            mip_ops(decompressed_data, mip_save_dir, opb(ops(data_path)[0])+'_decompressed', ops(data_path)[-1])
+                            mip_ops(orig_data, mip_save_dir, opb(
+                                ops(data_path)[0]), ops(data_path)[-1])
+                            mip_ops(decompressed_data, mip_save_dir, opb(
+                                ops(data_path)[0])+'_decompressed', ops(data_path)[-1])
                     # performance
-                    performance = eval_performance(steps, orig_data, decompressed_data, Log, self.opt.Decompress.aoi_thres_list, 
-                            self.opt.Decompress.mse_mape_thres_list, self.opt.Decompress.psnr_thres_list, 
-                            self.opt.Decompress.iou_acc_pre_thres_list, self.opt.Decompress.ssim)
-                            # eval_performance(steps, orig_data, decompressed_data, Log, self.opt.Decompress.aoi,
-                            #          self.opt.Decompress.mse, self.opt.Decompress.psnr, self.opt.Decompress.ssim, self.opt.Decompress.iou)
+                    performance = eval_performance(steps, orig_data, decompressed_data, Log, self.opt.Decompress.aoi_thres_list,
+                                                   self.opt.Decompress.mse_mape_thres_list, self.opt.Decompress.psnr_thres_list,
+                                                   self.opt.Decompress.iou_acc_pre_thres_list, self.opt.Decompress.ssim)
                     performance['loss'] = loss.cpu().detach().numpy()
-                    csv_path = os.path.join(Log.logdir,'performance.csv')
+                    csv_path = os.path.join(Log.logdir, 'performance.csv')
                     if not os.path.exists(csv_path):
                         out = open(csv_path, "a")
-                        csv_writer = csv.writer(out, dialect = "excel")
+                        csv_writer = csv.writer(out, dialect="excel")
                         csv_writer.writerow(performance.keys())
                     row = [performance[key] for key in performance.keys()]
                     csv_writer.writerow(row)
@@ -463,10 +480,12 @@ class NFGR(_BaseCompressFramerwork):
         Log.close()
 
     def adaptive_chunk(self, img_path, param_size, divide_type):
-        _, max_level, min_level, prune_var_thres, prune_mean_thres, Nb, Type = divide_type.split('_')
+        _, max_level, min_level, prune_var_thres, prune_mean_thres, Nb, Type = divide_type.split(
+            '_')
         max_level, min_level, prune_var_thres, prune_mean_thres, Nb, Type = int(
             max_level), int(min_level), int(prune_var_thres), int(prune_mean_thres), int(Nb), int(Type)
-        tree, save_data, dimension = adaptive_cal_tree(img_path,param_size,var_thr=prune_var_thres,e_thr=prune_mean_thres,maxl=max_level,minl=min_level,Nb=Nb,Type=Type)
+        tree, save_data, dimension = adaptive_cal_tree(
+            img_path, param_size, var_thr=prune_var_thres, e_thr=prune_mean_thres, maxl=max_level, minl=min_level, Nb=Nb, Type=Type)
         patch_list = tree.get_active()
         # adaptive chunks
         data_chunk_list = []
@@ -486,7 +505,8 @@ class NFGR(_BaseCompressFramerwork):
                 data_chunk['name'] = 'd_{}_{}-h_{}_{}-w_{}_{}'.format(
                     *data_chunk['d'], *data_chunk['h'], *data_chunk['w'])
             elif dimension == 2:
-                data_chunk['name'] = 'h_{}_{}-w_{}_{}'.format(*data_chunk['h'], *data_chunk['w'])     
+                data_chunk['name'] = 'h_{}_{}-w_{}_{}'.format(
+                    *data_chunk['h'], *data_chunk['w'])
         print('total numbers of the chunks: '+str(len(data_chunk_list)))
         return data_chunk_list, save_data
 
@@ -499,45 +519,62 @@ class NFGR(_BaseCompressFramerwork):
         shutil.copy(__file__, temp_script_path)
         # load and preprocess data
         data = read_img(data_path)
-        assert len(data.shape) == self.opt.Module.phi.coords_channel + 1, "The data dimension {} is inconsistent with the neural network input {}!".format(len(data.shape)-1,self.opt.Module.phi.coords_channel)
-        assert data.shape[-1] == self.opt.Module.phi.data_channel, "The number of data channels {} is inconsistent with the output of neural network {}!".format(data.shape[-1],self.opt.Module.phi.data_channel)
+        assert len(data.shape) == self.opt.Module.phi.coords_channel + \
+            1, "The data dimension {} is inconsistent with the neural network input {}!".format(
+                len(data.shape)-1, self.opt.Module.phi.coords_channel)
+        assert data.shape[-1] == self.opt.Module.phi.data_channel, "The number of data channels {} is inconsistent with the output of neural network {}!".format(
+            data.shape[-1], self.opt.Module.phi.data_channel)
         orig_sideinfos = {'data_shape': list(data.shape)}
         data_preprocessed = preprocess(data, self.opt.Compress.preprocess.denoise.level,
                                        self.opt.Compress.preprocess.denoise.close, self.opt.Compress.preprocess.clip)
-        data_preprocessed_save_path = opj(Log.logdir, opb(ops(data_path)[0])+'_preprocessed'+ops(data_path)[-1])
+        data_preprocessed_save_path = opj(Log.logdir, opb(
+            ops(data_path)[0])+'_preprocessed'+ops(data_path)[-1])
         save_img(data_preprocessed_save_path, data_preprocessed)
         # calculate parameter size
         param_size = self.parse_param_size(data_path)
         # 分配dynamic_ratio%的参数用于动态分配
         # if opt.CompressFramework.Compress.param.dynamic_iter != 0:
         #     dynamic_param_size = param_size*self.opt.Compress.param.dynamic_ratio
-            # param_size = param_size - dynamic_param_size
+        # param_size = param_size - dynamic_param_size
         # adaptive blocking
         if 'adaptive' in self.opt.Compress.divide.divide_type:
-            _, max_level, min_level, prune_var_thres, prune_mean_thres, Nb, Type = self.opt.Compress.divide.divide_type.split('_')
+            _, max_level, min_level, prune_var_thres, prune_mean_thres, Nb, Type = self.opt.Compress.divide.divide_type.split(
+                '_')
             if int(Nb) < 8:
                 logging.warning('Nb<8!')
                 self.opt.Compress.divide.divide_type = f'adaptotal_-1_-1_-1_{Nb}_1'
             else:
-                data_chunk_list, divide_img = self.adaptive_chunk(data_preprocessed_save_path, param_size, self.opt.Compress.divide.divide_type)
-                divide_path = os.path.join(Log.logdir, 'adaptive'+ os.path.splitext(data_preprocessed_save_path)[-1])
+                data_chunk_list, divide_img = self.adaptive_chunk(
+                    data_preprocessed_save_path, param_size, self.opt.Compress.divide.divide_type)
+                divide_path = os.path.join(
+                    Log.logdir, 'adaptive' + os.path.splitext(data_preprocessed_save_path)[-1])
         if 'adaptotal' in self.opt.Compress.divide.divide_type:
-            _, d_num, h_num, w_num, Nb, Type = self.opt.Compress.divide.divide_type.split('_')
-            d_num, h_num, w_num, Nb, Type = int(d_num), int(h_num), int(w_num), int(Nb), int(Type) 
+            _, d_num, h_num, w_num, Nb, Type = self.opt.Compress.divide.divide_type.split(
+                '_')
+            d_num, h_num, w_num, Nb, Type = int(d_num), int(
+                h_num), int(w_num), int(Nb), int(Type)
             if len(data.shape) == 3:
                 if h_num == -1 or w_num == -1:
-                    d_num,h_num,w_num = cal_divide_num(1,data.shape[0],data.shape[1],Nb,Type,param_size)
-                print(f'2D Image Divide Num:{h_num}-{w_num}, Chunk Size:{data.shape[0]/h_num}-{data.shape[1]/w_num}')
+                    d_num, h_num, w_num = cal_divide_num(
+                        1, data.shape[0], data.shape[1], Nb, Type, param_size)
+                print(
+                    f'2D Image Divide Num:{h_num}-{w_num}, Chunk Size:{data.shape[0]/h_num}-{data.shape[1]/w_num}')
             elif len(data.shape) == 4:
                 if d_num == -1 or h_num == -1 or w_num == -1:
-                    d_num,h_num,w_num = cal_divide_num(data.shape[0],data.shape[1],data.shape[2],Nb,Type,param_size)
-                print(f'3D Image Divide Num:{d_num}-{h_num}-{w_num}, Chunk Size:{data.shape[0]/d_num}-{data.shape[1]/h_num}-{data.shape[2]/w_num}')
-            data_chunk_list, divide_img = divide_data(data_preprocessed, f'total_{d_num}_{h_num}_{w_num}')
-            divide_path = os.path.join(Log.logdir, 'every'+ os.path.splitext(data_preprocessed_save_path)[-1])
+                    d_num, h_num, w_num = cal_divide_num(
+                        data.shape[0], data.shape[1], data.shape[2], Nb, Type, param_size)
+                print(
+                    f'3D Image Divide Num:{d_num}-{h_num}-{w_num}, Chunk Size:{data.shape[0]/d_num}-{data.shape[1]/h_num}-{data.shape[2]/w_num}')
+            data_chunk_list, divide_img = divide_data(
+                data_preprocessed, f'total_{d_num}_{h_num}_{w_num}')
+            divide_path = os.path.join(
+                Log.logdir, 'every' + os.path.splitext(data_preprocessed_save_path)[-1])
         elif 'every' in self.opt.Compress.divide.divide_type or 'total' in self.opt.Compress.divide.divide_type:
-            data_chunk_list, divide_img = divide_data(data_preprocessed, self.opt.Compress.divide.divide_type)
-            divide_path = os.path.join(Log.logdir, 'every'+ os.path.splitext(data_preprocessed_save_path)[-1])
-        save_img(divide_path,divide_img)
+            data_chunk_list, divide_img = divide_data(
+                data_preprocessed, self.opt.Compress.divide.divide_type)
+            divide_path = os.path.join(
+                Log.logdir, 'every' + os.path.splitext(data_preprocessed_save_path)[-1])
+        save_img(divide_path, divide_img)
         orig_sideinfos['chunks_numbers'] = len(data_chunk_list)
        # allocate parameter to the divided blocks
         data_chunk_list = alloc_param(
@@ -559,7 +596,8 @@ class NFGR(_BaseCompressFramerwork):
             self.opt.Compress.checkpoints, self.opt.Compress.max_steps)
         for data_chunk in data_chunk_list:
             task_opt = deepcopy(opt)
-            task_opt.Log.logdir = opj(opd(Log.logdir), task_pdir, data_chunk['name'])
+            task_opt.Log.logdir = opj(
+                opd(Log.logdir), task_pdir, data_chunk['name'])
             task_opt.Log.task_name = data_chunk['name']+'-static'
             task_opt.Log.stdlog = True
             task_opt.Log.tensorboard = False
@@ -575,8 +613,9 @@ class NFGR(_BaseCompressFramerwork):
                 cube_len = cube_len[0]*cube_len[1]*cube_len[2]
             elif len(data.shape) == 3:
                 cube_len = cube_len[1]*cube_len[2]
-            if task_opt.CompressFramework.Compress.sampler.name == 'randomcube' and min(data_chunk['size'],cube_len) > 80*80*80*1 :
-                logging.warning('Chunk size should not be larger than 80*80*80*1!')
+            if task_opt.CompressFramework.Compress.sampler.name == 'randomcube' and min(data_chunk['size'], cube_len) > 80*80*80*1:
+                logging.warning(
+                    'Chunk size should not be larger than 80*80*80*1!')
                 task_opt.CompressFramework.Compress.sampler.name = 'randompoint'
             # theory_module_size
             _, _, data_chunk['theory_module_size'] = NFGR.estimate_module_size(
@@ -602,7 +641,7 @@ class NFGR(_BaseCompressFramerwork):
             queue = Queue(task_list, gpu_list)
             queue.init_sharecost_dict()
             queue.start(time_interval, max_task, log=False,
-                        remind=False, debug=debug)
+                        remind=False, debug=debug, autogpu=False)
         except:
             pass
 
@@ -629,8 +668,8 @@ class NFGR(_BaseCompressFramerwork):
             for chunk_name in chunk_name_list:
                 chunk_module_save_dir = opj(module_save_dir, chunk_name)
                 os.makedirs(chunk_module_save_dir, exist_ok=True)
-                # shutil.copy(opj(opd(Log.logdir),task_pdir,chunk_name,'steps{}'.format(steps),'compressed','module'),opj(chunk_module_save_dir,'module'))
-                origin_dir = opj(opd(Log.logdir), task_pdir, chunk_name, 'steps{}'.format(steps), 'compressed', 'module')
+                origin_dir = opj(opd(Log.logdir), task_pdir, chunk_name, 'steps{}'.format(
+                    steps), 'compressed', 'module')
                 new_dir = opj(chunk_module_save_dir, 'module')
                 CopyDir(origin_dir, new_dir)
             actual_compressed_data_bytes = get_folder_size(compressed_save_dir)
@@ -647,7 +686,8 @@ class NFGR(_BaseCompressFramerwork):
                     decompressed_save_dir = opj(
                         save_dir_current_steps, 'decompressed')
                     os.makedirs(decompressed_save_dir, exist_ok=True)
-                    decompressed_data_save_path = opj(decompressed_save_dir, opb(ops(data_path)[0])+'_decompressed'+ops(data_path)[-1])
+                    decompressed_data_save_path = opj(decompressed_save_dir, opb(
+                        ops(data_path)[0])+'_decompressed'+ops(data_path)[-1])
                     save_img(decompressed_data_save_path, decompressed_data)
                 # mip
                 if self.opt.Decompress.mip:
@@ -655,21 +695,22 @@ class NFGR(_BaseCompressFramerwork):
                     if len(orig_data.shape) == 4:
                         mip_save_dir = opj(save_dir_current_steps, 'mip')
                         os.makedirs(mip_save_dir, exist_ok=True)
-                        mip_ops(orig_data, mip_save_dir, opb(ops(data_path)[0]), ops(data_path)[-1])
-                        mip_ops(decompressed_data, mip_save_dir, opb(ops(data_path)[0])+'_decompressed', ops(data_path)[-1])
+                        mip_ops(orig_data, mip_save_dir, opb(
+                            ops(data_path)[0]), ops(data_path)[-1])
+                        mip_ops(decompressed_data, mip_save_dir, opb(
+                            ops(data_path)[0])+'_decompressed', ops(data_path)[-1])
                 # performance
-                performance = eval_performance(steps, orig_data, decompressed_data, Log, self.opt.Decompress.aoi_thres_list, 
-                        self.opt.Decompress.mse_mape_thres_list, self.opt.Decompress.psnr_thres_list, 
-                        self.opt.Decompress.iou_acc_pre_thres_list, self.opt.Decompress.ssim)
+                performance = eval_performance(steps, orig_data, decompressed_data, Log, self.opt.Decompress.aoi_thres_list,
+                                               self.opt.Decompress.mse_mape_thres_list, self.opt.Decompress.psnr_thres_list,
+                                               self.opt.Decompress.iou_acc_pre_thres_list, self.opt.Decompress.ssim)
 
-                csv_path = os.path.join(Log.logdir,'performance.csv')
+                csv_path = os.path.join(Log.logdir, 'performance.csv')
                 if not os.path.exists(csv_path):
                     out = open(csv_path, "a")
-                    csv_writer = csv.writer(out, dialect = "excel")
+                    csv_writer = csv.writer(out, dialect="excel")
                     csv_writer.writerow(performance.keys())
                 row = [performance[key] for key in performance.keys()]
                 csv_writer.writerow(row)
-
 
         #################### 根据loss动态分配参数量 ####################
         dynamic_task_list = []
@@ -689,7 +730,8 @@ class NFGR(_BaseCompressFramerwork):
         # 动态训练
         dynamic_iter = opt.CompressFramework.Compress.param.dynamic_iter
         dynamic_step = opt.CompressFramework.Compress.param.dynamic_step
-        dynamic_num = int(len(dynamic_chunk.patches)*opt.CompressFramework.Compress.param.dynamic_num_ratio)
+        dynamic_num = int(len(dynamic_chunk.patches) *
+                          opt.CompressFramework.Compress.param.dynamic_num_ratio)
         for step in range(dynamic_iter):
             os.makedirs(opj(dynamic_task_pdir, str(step)))
             # update loss
@@ -698,16 +740,21 @@ class NFGR(_BaseCompressFramerwork):
             for chunk in dynamic_chunk.patches:
                 os.makedirs(opj(dynamic_task_pdir, str(step), chunk.name))
                 chunk.last_net_path = chunk.save_net_path
-                chunk.init_net_path = opj(dynamic_task_pdir, str(step), chunk.name, 'init_module')
-                chunk.save_net_path = opj(dynamic_task_pdir, str(step), chunk.name, 'save_module')
-                chunk.sideinfos_path = opj(dynamic_task_pdir, str(step), chunk.name, 'sideinfos.yaml')
-            # dynamic_chunk.update_net(dynamic_num, dynamic_param_size/dynamic_iter/dynamic_num)
-            dynamic_chunk.update_net(dynamic_num, self.opt.Compress.param.dynamic_ratio)
+                chunk.init_net_path = opj(dynamic_task_pdir, str(
+                    step), chunk.name, 'init_module')
+                chunk.save_net_path = opj(dynamic_task_pdir, str(
+                    step), chunk.name, 'save_module')
+                chunk.sideinfos_path = opj(dynamic_task_pdir, str(
+                    step), chunk.name, 'sideinfos.yaml')
+            dynamic_chunk.update_net(
+                dynamic_num, self.opt.Compress.param.dynamic_ratio)
             # train
             for chunk in dynamic_chunk.patches:
                 chunk.opt = deepcopy(opt)
-                chunk.opt.Log.logdir = opj(dynamic_task_pdir, str(step), chunk.name)   # step需要作为项目区分
-                chunk.opt.Log.task_name = chunk.name + '-dynamic{}'.format(step)
+                chunk.opt.Log.logdir = opj(dynamic_task_pdir, str(
+                    step), chunk.name)
+                chunk.opt.Log.task_name = chunk.name + \
+                    '-dynamic{}'.format(step)
                 if chunk.sparse == False:
                     chunk.opt.Log.stdlog = True
                 chunk.opt.Log.tensorboard = False
@@ -718,35 +765,43 @@ class NFGR(_BaseCompressFramerwork):
                 chunk.opt.CompressFramework.Compress.preprocess.denoise.close = False
                 chunk.opt.CompressFramework.Compress.decompress = False
 
-                chunk.opt.CompressFramework.Compress.param.dynamic = True              # 开始动态分配
-                chunk.opt.CompressFramework.Compress.max_steps = dynamic_step          # 训练2000次
+                chunk.opt.CompressFramework.Compress.param.dynamic = True             
+                chunk.opt.CompressFramework.Compress.max_steps = dynamic_step          
                 chunk.opt.CompressFramework.Compress.param.given_size = chunk.param_size
                 chunk.opt.CompressFramework.Compress.param.last_net_path = chunk.last_net_path
                 chunk.opt.CompressFramework.Compress.param.init_net_path = chunk.init_net_path
                 chunk.opt.CompressFramework.Compress.param.save_net_path = chunk.save_net_path
                 chunk.opt.CompressFramework.Compress.param.sideinfos_path = chunk.sideinfos_path
                 chunk.opt.CompressFramework.Compress.param.sparse_file_path = chunk.sparse_file_path
-                _, _, chunk.actual_module_size = NFGR.estimate_module_size(chunk.param_size, chunk.opt.CompressFramework)
+                _, _, chunk.actual_module_size = NFGR.estimate_module_size(
+                    chunk.param_size, chunk.opt.CompressFramework)
                 # save data chunk
-                data_chunk_save_path = opj(dynamic_data_chunk_save_dir, chunk.name+ops(data_path)[-1])
+                data_chunk_save_path = opj(
+                    dynamic_data_chunk_save_dir, chunk.name+ops(data_path)[-1])
                 # save task opt
                 chunk.opt.Dataset.data_path = data_chunk_save_path
-                dynamic_task_opt_yaml_path = opj(dynamic_task_opt_save_dir, chunk.opt.Log.task_name+'.yaml')
+                dynamic_task_opt_yaml_path = opj(
+                    dynamic_task_opt_save_dir, chunk.opt.Log.task_name+'.yaml')
                 OmegaConf.save(chunk.opt, dynamic_task_opt_yaml_path)
                 # instance Task
                 if chunk.sparse == False:
-                    command = "python {} -p {}".format(temp_script_path, dynamic_task_opt_yaml_path)
-                    dynamic_task_list.append(Task(command, chunk.opt.Log.task_name, gpucost, cpucost, cost_variable=str(chunk.param_size)))
+                    command = "python {} -p {}".format(
+                        temp_script_path, dynamic_task_opt_yaml_path)
+                    dynamic_task_list.append(Task(
+                        command, chunk.opt.Log.task_name, gpucost, cpucost, cost_variable=str(chunk.param_size)))
                 else:
                     # if chunk.last_param_size == chunk.param_size:
                     #     pass
                     # else:
-                    command = "python {} -p {}".format(args.s, dynamic_task_opt_yaml_path)
-                    dynamic_task_list.append(Task(command, chunk.opt.Log.task_name, gpucost, cpucost, cost_variable=str(chunk.param_size)))
+                    command = "python {} -p {}".format(
+                        args.s, dynamic_task_opt_yaml_path)
+                    dynamic_task_list.append(Task(
+                        command, chunk.opt.Log.task_name, gpucost, cpucost, cost_variable=str(chunk.param_size)))
             try:
                 queue = Queue(dynamic_task_list, gpu_list)
                 queue.init_sharecost_dict()
-                queue.start(time_interval, max_task, log=False, remind=False, debug=debug)
+                queue.start(time_interval, max_task, log=False,
+                            remind=False, debug=debug)
             except:
                 pass
 
@@ -763,12 +818,17 @@ class NFGR(_BaseCompressFramerwork):
                 chunk_dict = {'data': decompressed_data,
                               'name': chunk_name}
                 if dynamic_chunk.dimension == 2:
-                    h = [int(i) for i in chunk_name.split('-')[0].split('_')[1:]]
-                    w = [int(i) for i in chunk_name.split('-')[1].split('_')[1:]]
+                    h = [int(i)
+                         for i in chunk_name.split('-')[0].split('_')[1:]]
+                    w = [int(i)
+                         for i in chunk_name.split('-')[1].split('_')[1:]]
                 elif dynamic_chunk.dimension == 3:
-                    d = [int(i) for i in chunk_name.split('-')[0].split('_')[1:]]
-                    h = [int(i) for i in chunk_name.split('-')[1].split('_')[1:]]
-                    w = [int(i) for i in chunk_name.split('-')[2].split('_')[1:]]
+                    d = [int(i)
+                         for i in chunk_name.split('-')[0].split('_')[1:]]
+                    h = [int(i)
+                         for i in chunk_name.split('-')[1].split('_')[1:]]
+                    w = [int(i)
+                         for i in chunk_name.split('-')[2].split('_')[1:]]
                     chunk_dict['d'] = d
                 chunk_dict['h'] = h
                 chunk_dict['w'] = w
@@ -797,13 +857,11 @@ class NFGR(_BaseCompressFramerwork):
                 chunk_module_save_dir = opj(module_save_dir, chunk.name)
                 os.makedirs(chunk_module_save_dir, exist_ok=True)
                 if chunk.sparse == False:
-                    # shutil.copy(chunk.save_net_path,opj(chunk_module_save_dir,'module'))
                     CopyDir(chunk.save_net_path, opj(
                         chunk_module_save_dir, 'module'))
                 else:
-                    shutil.copy(chunk.sparse_file_path,opj(chunk_module_save_dir,'module_sparse.npy')) # TODO 目前是二进制文件
-                    # CopyDir(chunk.sparse_file_path, opj(
-                    #     chunk_module_save_dir, 'module_sparse.npy'))
+                    shutil.copy(chunk.sparse_file_path, opj(
+                        chunk_module_save_dir, 'module_sparse.npy'))
             actual_compressed_data_bytes = get_folder_size(compressed_save_dir)
             theory_compressed_data_bytes = get_folder_size(
                 sideinfos_save_dir) + sum([chunk.actual_module_size for chunk in dynamic_chunk.patches])
@@ -828,18 +886,18 @@ class NFGR(_BaseCompressFramerwork):
                     mip_ops(decompressed_data, mip_save_dir, opb(
                         ops(data_path)[0])+'_decompressed', ops(data_path)[-1])
             # performance
-            performance = eval_performance(steps+(step+1)*dynamic_step, orig_data, decompressed_data, Log, self.opt.Decompress.aoi_thres_list, 
-                        self.opt.Decompress.mse_mape_thres_list, self.opt.Decompress.psnr_thres_list, 
-                        self.opt.Decompress.iou_acc_pre_thres_list, self.opt.Decompress.ssim)
-            csv_path = os.path.join(Log.logdir,'performance_dynamic.csv')
+            performance = eval_performance(steps+(step+1)*dynamic_step, orig_data, decompressed_data, Log, self.opt.Decompress.aoi_thres_list,
+                                           self.opt.Decompress.mse_mape_thres_list, self.opt.Decompress.psnr_thres_list,
+                                           self.opt.Decompress.iou_acc_pre_thres_list, self.opt.Decompress.ssim)
+            csv_path = os.path.join(Log.logdir, 'performance_dynamic.csv')
             if not os.path.exists(csv_path):
                 out = open(csv_path, "a")
-                csv_writer = csv.writer(out, dialect = "excel")
+                csv_writer = csv.writer(out, dialect="excel")
                 csv_writer.writerow(performance.keys())
             row = [performance[key] for key in performance.keys()]
             csv_writer.writerow(row)
         #################### END ####################
-        # remove 
+        # remove
         if not args.substore:
             shutil.rmtree(opj(opd(Log.logdir), 'subexps'))
             shutil.rmtree(opj(opd(Log.logdir), 'data_chunks'))
@@ -847,12 +905,8 @@ class NFGR(_BaseCompressFramerwork):
             if opt.CompressFramework.Compress.param.dynamic_iter != 0:
                 shutil.rmtree(opj(opd(Log.logdir), 'dynamic_task_opts'))
                 shutil.rmtree(opj(opd(Log.logdir), 'dynamic_exps'))
-        # remove temp_script_path
         os.remove(temp_script_path)
-        # remind the user
-        # reminding(MIAOCODE[USER])
 
-# 用于存储单块数据
 
 
 class Chunk:
@@ -908,10 +962,6 @@ class Chunk:
             old_net = init_phi(old_opt.CompressFramework.Module.phi)
             if old_opt.CompressFramework.Compress.half:
                 old_net.half()
-            # load the parameters
-            # module_state_dict = torch.load(self.last_net_path,map_location=torch.device('cpu'))
-            # for k in module_state_dict.keys():
-            #     old_net.load_state_dict(module_state_dict[k])
             load_model(old_net, self.last_net_path, self.device)
             # new module
             # init the constructure
@@ -932,8 +982,6 @@ class Chunk:
                     new_net.net[l][0].bias[:] = 0
                     new_net.net[l][0].bias[:old_weight_shape[0]
                                            ] = old_net.net[l][0].bias
-            # module_state_dict = {'phi':new_net.cpu().state_dict()}
-            # torch.save(module_state_dict,self.init_net_path)
             save_model(new_net, self.init_net_path, self.device)
         else:   # if the module has been pruned
             if self.param_size >= self.sparse_param_size:   # stop pruning
@@ -944,8 +992,7 @@ class Chunk:
                 self.sparse_file_path = 'none'
                 self.param_increase()
             else:
-                # shutil.copy(self.sparse_init_net_path, self.init_net_path) # TODO: 也许有bug，文件和文件夹之间的区别
-                CopyDir(self.sparse_init_net_path, self.init_net_path) # TODO: sparse compression 的net保存格式需要改为我们的格式
+                CopyDir(self.sparse_init_net_path, self.init_net_path)
 
     def param_decrease(self):
         if self.sparse == False:  # if the module has not been pruned
@@ -953,11 +1000,9 @@ class Chunk:
             self.sparse_init_net_path = self.last_net_path
             self.sparse_param_size = self.last_param_size
             self.sparse_file_path = self.save_net_path + '_sparse.npy'
-            # shutil.copy(self.sparse_init_net_path, self.init_net_path)
             CopyDir(self.sparse_init_net_path, self.init_net_path)
         else:
             self.sparse_file_path = self.save_net_path + '_sparse.npy'
-            # shutil.copy(self.sparse_init_net_path, self.init_net_path)
             CopyDir(self.sparse_init_net_path, self.init_net_path)
 
 
@@ -971,7 +1016,7 @@ class Dynamic_Chunk:
     def init_patches(self, data_chunk_list):
         self.patches = []   # 激活块
         for data_chunk in data_chunk_list:
-            chunk = Chunk(data_chunk, self.device) 
+            chunk = Chunk(data_chunk, self.device)
             self.patches.append(chunk)
 
     def update_loss(self, decompressed_data):
@@ -980,12 +1025,14 @@ class Dynamic_Chunk:
         res = self.data - decompressed_data
         for patch in self.patches:
             if self.dimension == 2:
-                patch_res = res[patch.y:patch.y+patch.h, patch.x:patch.x+patch.w]
+                patch_res = res[patch.y:patch.y +
+                                patch.h, patch.x:patch.x+patch.w]
             elif self.dimension == 3:
-                patch_res = res[patch.z:patch.z+patch.d,patch.y:patch.y+patch.h, patch.x:patch.x+patch.w]
-            
+                patch_res = res[patch.z:patch.z+patch.d,
+                                patch.y:patch.y+patch.h, patch.x:patch.x+patch.w]
+
             patch.last_loss = patch.loss
-            patch.loss = sqrt((patch_res**2).mean()) # patch.loss = sqrt((patch_res**2).mean())
+            patch.loss = sqrt((patch_res**2).mean())
             self.loss.append(patch.loss)
 
     def update_net(self, num, exchange_ratio):
@@ -1013,16 +1060,16 @@ class Dynamic_Chunk:
                 CopyDir(patch.last_net_path, patch.init_net_path)
             else:
                 CopyDir(patch.sparse_init_net_path, patch.init_net_path)
-        # 将loss小的块参数量减小exchange_ratio，然后根据loss大小分配到loss大的块
-        if exchange_ratio <=0:
-            return 
+        if exchange_ratio <= 0:
+            return
         exchange_param_size = 0
         for patch in self.min_loss_patches[int(-num*0.2):]:
             patch.param_size -= patch.param_size*exchange_ratio
             patch.param_decrease()
             exchange_param_size += patch.param_size*exchange_ratio
         for patch in self.max_loss_patches:
-            patch.param_size += exchange_param_size*patch.loss/max_loss_total # patch.param_size += exchange_param_size/num
+            patch.param_size += exchange_param_size*patch.loss / \
+                max_loss_total  # patch.param_size += exchange_param_size/num
             patch.param_increase()
 
 
@@ -1052,7 +1099,8 @@ def main():
         CompressFramework.compress(data_path)
     else:
         global dynamic_chunk
-        dynamic_chunk = Dynamic_Chunk(data_path, CompressFramework.device)  # 动态分块
+        dynamic_chunk = Dynamic_Chunk(
+            data_path, CompressFramework.device)  # 动态分块
         CompressFramework.compress_divide(data_path, opt)
 
 
@@ -1061,19 +1109,27 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='single task for datacompress')
     parser.add_argument('-p', type=str, default=opj(opd(__file__),
-                        'opt', 'DivideTask', 'big.yaml'), help='yaml file path')
+                        'opt', 'neurons.yaml'), help='yaml file path')
     parser.add_argument('-s', type=str, default=opj(opd(__file__),
                         'sparse_compression.py'), help='sparse compression file path')
-    parser.add_argument('-g', help='availabel gpu list', default='0,1,2,3',
+    parser.add_argument('-g', help='availabel gpu list', default='0',
                         type=lambda s: [int(item) for item in s.split(',')])
-    parser.add_argument('-gc',type=int,default=8000,help='gpu cost in every task. For compress_divide')
-    parser.add_argument('-cc',type=int,default=3000,help='cpu cost in every task. For compress_divide')
-    parser.add_argument('-t',type=float,default=2,help='the time interval between each task-assigning loop. For compress_divide')
-    parser.add_argument('-m',type=int,default=12,help='the max nums of task in running. For compress_divide')
-    parser.add_argument('-dropslice',action='store_true',help='. For compress_divide')
-    parser.add_argument('-debug',action='store_true',help='. For compress_divide')
-    parser.add_argument('-weightstore',action='store_true',help='save the weight of the first layer')
-    parser.add_argument('-substore',action='store_true',help='keep the sub exps and opts')
+    parser.add_argument('-gc', type=int, default=8000,
+                        help='gpu cost in every task. For compress_divide')
+    parser.add_argument('-cc', type=int, default=3000,
+                        help='cpu cost in every task. For compress_divide')
+    parser.add_argument('-t', type=float, default=2,
+                        help='the time interval between each task-assigning loop. For compress_divide')
+    parser.add_argument('-m', type=int, default=4,
+                        help='the max nums of task in running. For compress_divide')
+    parser.add_argument('-dropslice', action='store_true',
+                        help='. For compress_divide')
+    parser.add_argument('-debug', action='store_true',
+                        help='. For compress_divide')
+    parser.add_argument('-weightstore', action='store_true',
+                        help='save the weight of the first layer')
+    parser.add_argument('-substore', action='store_true',
+                        help='keep the sub exps and opts')
     args = parser.parse_args()
     gpu_list = args.g
     gpucost = args.gc

@@ -1,0 +1,127 @@
+Reproduc:
+  seed: 42
+  benchmark: false
+  deterministic: true
+CompressFramework:
+  Name: NFGR
+  ratio: 64
+  decompress: true
+  Compress:
+    divide:
+      divide_type: adaptive_-1_-1_-1_-1_-1_1
+      param_alloc: by_aoi
+      param_size_thres: 100
+      exception: none
+    half: false
+    sampler:
+      name: randomcube
+      cube_count: 1
+      cube_len:
+      - 10000000
+      - 10000000
+      - 10000000
+      sample_size: 100000
+      gpu_force: true
+    coords_mode: -1,1
+    preprocess:
+      denoise:
+        level: 1000
+        close:
+        - 2
+        - 2
+        - 2
+      clip:
+      - 0
+      - 65535
+    param:
+      dynamic: false
+      last_net_path: none
+      init_net_path: none
+      save_net_path: none
+      sparse_file_path: none
+      sideinfos_path: none
+      dynamic_iter: 0
+      dynamic_step: 5000
+      dynamic_num_ratio: 0.5
+      dynamic_ratio: 0.0
+      filesize_ratio: 1700
+      given_size: 0
+    loss:
+      name: datal2
+      beta: 0.01
+      weight:
+      - value_10001_65535_0.1
+      weight_thres: 0
+    gpu: true
+    max_steps: 80000
+    checkpoints: every_40000
+    loss_log_freq: 200
+    lr_phi: 0.001
+    optimizer_name_phi: Adamax
+    lr_scheduler_phi:
+      name: MultiStepLR
+      milestones:
+      - 50000
+      - 60000
+      - 70000
+      gamma: 0.2
+    decompress: true
+  Decompress:
+    sample_size: 10000
+    gpu: true
+    postprocess:
+      denoise:
+        level: 100
+        close:
+        - 2
+        - 2
+        - 2
+      clip:
+      - 0
+      - 65535
+    keep_decompressed: true
+    mip: true
+    aoi_thres_list:
+    - 100
+    - 200
+    - 500
+    - 2000
+    mse_mape_thres_list:
+    - 100
+    - 200
+    - 500
+    - 2000
+    psnr_thres_list:
+    - - 0
+      - 100
+    - - 100
+      - 500
+    - - 500
+      - 2000
+    - - 2000
+      - 65535
+    iou_acc_pre_thres_list:
+    - 100
+    - 200
+    - 500
+    - 2000
+    ssim: true
+  Module:
+    phi:
+      coords_channel: 3
+      data_channel: 1
+      layers: 7
+      name: SIREN
+      w0: 10
+      output_act: false
+      res: false
+  Normalize:
+    name: minmaxany_0_100
+Log:
+  logdir: none
+  project_name: sota_NFGR_2022_0719_121948_202859
+  task_name: task_00003
+  stdlog: true
+  tensorboard: true
+Dataset:
+  data_path: data/neurons.tif

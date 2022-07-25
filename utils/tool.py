@@ -2,8 +2,6 @@ import numpy as np
 import os
 import tifffile
 import cv2
-import mrcfile
-import logging
 from numpy import prod, zeros  
 
 def get_type_max(data):

@@ -145,56 +145,7 @@ class Queue():
                 else:
                     self.sharecost_dict[task.cost_variable]={'cpucost':0,'gpucost':0,'task_list':[task]}
                     # self.sharecost_dict[task.cost_variable]={'cpucost':0,'gpucost':0,'task_list':[task]}
-    def refine_gpucost_cpucost(self):
-        # cpu
-        for cv in self.sharecost_dict:
-            task_list :List[Task]= self.sharecost_dict[cv]['task_list']
-            if len(set(task_list) & set(self.running_list)):
-                # find the max cpu using
-                max_cpuusing = max([task.cpuusing for task in task_list])
-                # *1.2
-                new_cpucost = max(self.sharecost_dict[cv]['cpucost'],max_cpuusing*1.2)
-                self.sharecost_dict[cv]['cpucost'] = new_cpucost
-                # refine cpucost
-                for task in task_list:
-                    task.cpucost = new_cpucost
-        # gpu
-        if 'win' in platform:
-            logging.warn('refine gpucost Not supported for Windows!')
-        elif 'linux' in platform:
-            for cv in self.sharecost_dict:
-                task_list :List[Task]= self.sharecost_dict[cv]['task_list']
-                if len(set(task_list) & set(self.running_list)):
-                    # find the max gpu using
-                    max_gpuusing = max([task.gpuusing for task in task_list])
-                    # *1.2
-                    new_gpucost = max(self.sharecost_dict[cv]['gpucost'],max_gpuusing*1.2)
-                    self.sharecost_dict[cv]['gpucost'] = new_gpucost
-                    # refine gpucost cpucost
-                    if new_gpucost > 100 :
-                        for task in task_list:
-                            task.gpucost = new_gpucost
-        else:
-            raise NotImplementedError
-
-    def refine_gpufree_cpufree(self,):
-        """consider the minimum gpu free cpu free
-        """
-        # cpu
-        self.cpufree = psutil.virtual_memory().available/2**20 #MBytes
-        for task in self.running_list:
-            self.cpufree -= max(task.cpucost-task.cpuusing,0)
-        # gpu
-        for gpuidx in self.gpu_list:
-            h = pynvml.nvmlDeviceGetHandleByIndex(gpuidx)
-            self.gpufree[gpuidx] = pynvml.nvmlDeviceGetMemoryInfo(h).free/2**20 #MBytes
-        if 'win' in platform:
-            logging.warn('refine gpufree Not supported for Windows!')
-        elif 'linux' in platform:
-            for task in self.running_list:
-                for gpuidx in task.worker.gpu_list:
-                    self.gpufree[gpuidx] -= max(task.gpucost-task.gpuusing,0)
-
+    
     def check_finish(self,):
         if len(self.finish_list) == self.task_count:
             return True
@@ -237,16 +188,7 @@ class Queue():
                 # logging.debug('Achieve Max task nums:{}!'.format(max_task))
                 break
             if autogpu:
-                gpufree_maxidx = max(self.gpufree,key=self.gpufree.get)
-                if self.gpufree[gpufree_maxidx]*0.95 >= task.gpucost and self.cpufree*0.95 >= task.cpucost:
-                    self.gpufree[gpufree_maxidx] -= task.gpucost
-                    self.cpufree -= task.cpucost
-                    # assign worker
-                    task.worker = Worker([gpufree_maxidx],task)
-                    task.worker.start(debug)
-                    logging.warning('Task:{} Start! Using GPU:{}'.format(task.name,gpufree_maxidx))
-                    temp_task_list.append(task)
-                    time.sleep(1) # keep 5 sec to avoid crowded line
+                raise NotImplementedError
             else:
                 # assign worker
                 task.worker = Worker(self.gpu_list,task)
@@ -297,8 +239,6 @@ class Queue():
         try:
             while True:
                 self.query_gpuusing_cpuusing()
-                self.refine_gpucost_cpucost()
-                self.refine_gpufree_cpufree()
                 self.run_pending_list(max_task,debug,autogpu)
                 self.update_error_finish_list()
                 self.repending_error_list()
